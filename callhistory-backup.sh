@@ -27,10 +27,11 @@ fi
 
 # Online consistent snapshot of the live SQLite DB (handles WAL correctly).
 if /usr/bin/sqlite3 "$SOURCE_DB" ".backup '$DEST'"; then
-  /bin/rm -f "${DEST}-wal" "${DEST}-shm"
   # Self-check: a healthy snapshot has call records and a sane date range.
   STATS=$(/usr/bin/sqlite3 "$DEST" \
     "SELECT count(*) || ' calls, ' || date(min(ZDATE)+978307200,'unixepoch') || ' -> ' || date(max(ZDATE)+978307200,'unixepoch') FROM ZCALLRECORD;" 2>/dev/null) || STATS="(stats query failed)"
+  # Sidecar cleanup AFTER the stats query — opening the DB recreates -wal/-shm.
+  /bin/rm -f "${DEST}-wal" "${DEST}-shm"
   /usr/bin/gzip -f "$DEST"
   SIZE=$(/usr/bin/du -h "${DEST}.gz" | /usr/bin/awk '{print $1}')
   log "backup OK: ${DEST}.gz (${SIZE}; ${STATS})"
