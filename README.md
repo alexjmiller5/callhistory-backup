@@ -9,10 +9,19 @@ Apple retains only a limited window of call history in
 `~/Library/Application Support/CallHistoryDB/CallHistory.storedata`; these
 snapshots are what preserve long-term history.
 
-Each run lands a consistent SQLite snapshot (via `sqlite3 .backup`, WAL-safe) in
-`~/Documents/call-history-backups/<YYYY-MM-DD>/callhistory.db.gz`, and logs a
-self-check line with the call count and date range to
-`~/Library/Logs/callhistory-backup.log`.
+Each run lands in `~/Documents/call-history-backups/<YYYY-MM-DD>/`:
+
+- `callhistory.db.gz` — consistent SQLite snapshot (via `sqlite3 .backup`,
+  WAL-safe) of CallHistoryDB, with a self-check log line (call count + date
+  range). **Phone + FaceTime only** — Apple never syncs third-party calls here.
+- `siri-callhistory.tar.gz` — the `Siri.Remembers.CallHistory` Biome stream,
+  the only Mac-side record of **third-party CallKit calls (WhatsApp, etc.)**
+  synced from the iPhone (`remote/<device-uuid>/` subdirs). SEGB-encoded;
+  parse with [ccl-segb](https://github.com/cclgroupltd/ccl-segb) — records are
+  `INStartCallIntent` payloads carrying app bundle ID, handle, and timestamp.
+  Scope is deliberately just this one Siri.Remembers stream.
+
+The run log is `~/Library/Logs/callhistory-backup.log`.
 
 ## Layout
 

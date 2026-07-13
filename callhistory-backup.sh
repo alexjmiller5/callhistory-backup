@@ -40,4 +40,22 @@ else
   exit 1
 fi
 
+# Siri.Remembers.CallHistory Biome stream — the only Mac-side record of
+# third-party CallKit calls (WhatsApp etc.), synced from the iPhone under
+# remote/<device-uuid>/. CallHistoryDB itself only ever gets phone + FaceTime.
+# Deliberate scope: ONLY this Siri.Remembers stream; the others
+# (MessageHistory, AudioHistory, ...) stay excluded for privacy.
+BIOME="$HOME/Library/Biome/streams/restricted"
+if [[ -d "$BIOME/Siri.Remembers.CallHistory" ]]; then
+  OUT="$RUN_DIR/siri-callhistory.tar.gz"
+  if /usr/bin/tar -czf "$OUT" -C "$BIOME" Siri.Remembers.CallHistory 2>/dev/null; then
+    SIZE=$(/usr/bin/du -h "$OUT" | /usr/bin/awk '{print $1}')
+    log "backup OK: $OUT (${SIZE})"
+  else
+    log "ERROR: tar failed for Siri.Remembers.CallHistory stream"
+  fi
+else
+  log "WARN: Siri.Remembers.CallHistory stream not found, skipping"
+fi
+
 log "=== run end ==="
