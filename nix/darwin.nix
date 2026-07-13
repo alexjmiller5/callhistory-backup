@@ -14,11 +14,25 @@ let
   signingIdentity = "callhistory-backup-signing";
   appInstallPath = "/Applications/CallHistoryBackup.app";
 
-  appBundle = pkgs.runCommand "callhistory-backup-app" { } ''
+  script = pkgs.writeScript "callhistory-backup.sh" (builtins.readFile ../callhistory-backup.sh);
+
+  # TCC evaluates the grant's designated requirement against the PROCESS's main
+  # executable. A shebang script as CFBundleExecutable runs as /bin/zsh, which
+  # fails that check — grant recorded, access still denied. So the bundle
+  # executable is a tiny signed Mach-O that execs the store script; FDA
+  # inherits across the exec (same mechanism as notion-finance-sync).
+  appBundle = pkgs.runCommandCC "callhistory-backup-app" { } ''
     mkdir -p "$out/Contents/MacOS"
     cp ${../bundle/Info.plist} "$out/Contents/Info.plist"
-    cp ${../callhistory-backup.sh} "$out/Contents/MacOS/callhistory-backup"
-    chmod +x "$out/Contents/MacOS/callhistory-backup"
+    cat > stub.c <<EOF
+    #include <unistd.h>
+    int main(int argc, char **argv) {
+      argv[0] = (char *)"${script}";
+      execv("${script}", argv);
+      return 127;
+    }
+    EOF
+    $CC -O2 -o "$out/Contents/MacOS/callhistory-backup" stub.c
   '';
 in
 {

@@ -11,8 +11,8 @@
     <key>CFBundleDisplayName</key>
     <string>Call History Backup</string>
 
-    <!-- The main executable IS the backup script (Contents/MacOS/callhistory-backup),
-         copied from the repo's callhistory-backup.sh at build. -->
+    <!-- The main executable is a tiny signed Mach-O stub that execs
+         callhistory-backup.sh (see nix/darwin.nix for why). -->
     <key>CFBundleExecutable</key>
     <string>callhistory-backup</string>
 
