@@ -18,8 +18,16 @@ Each run lands in `~/Documents/call-history-backups/<YYYY-MM-DD>/`:
   the only Mac-side record of **third-party CallKit calls (WhatsApp, etc.)**
   synced from the iPhone (`remote/<device-uuid>/` subdirs). SEGB-encoded;
   parse with [ccl-segb](https://github.com/cclgroupltd/ccl-segb) — records are
-  `INStartCallIntent` payloads carrying app bundle ID, handle, and timestamp.
-  Scope is deliberately just this one Siri.Remembers stream.
+  `INStartCallIntent` payloads carrying app bundle ID, handle, and timestamp
+  (call *attempts* only, no durations). Scope is deliberately just this one
+  Siri.Remembers stream.
+- `whatsapp-callhistory.db.gz` + `whatsapp-lid.db.gz` — WhatsApp desktop's own
+  call log, the only store anywhere with third-party call **durations**,
+  direction, missed/connected, and audio/video (table `ZWACDCALLEVENT`;
+  `ZOUTCOME` 0 = connected). Peers are anonymized `@lid` IDs — LID.sqlite maps
+  them. Captured only where WhatsApp is installed, linked, and running
+  (warn-skipped elsewhere); on the mini a keep-alive agent in nix-config keeps
+  WhatsApp open so the log stays synced.
 
 The run log is `~/Library/Logs/callhistory-backup.log`.
 

@@ -40,6 +40,39 @@ else
   exit 1
 fi
 
+# WhatsApp desktop's own call log — the only store anywhere with third-party
+# call DURATIONS and outcomes (Apple's CallHistoryDB only ever syncs phone +
+# FaceTime; WhatsApp entries never leave the iPhone). Requires WhatsApp
+# installed and linked on this machine, and running so it stays synced —
+# warn-skips otherwise. LID.sqlite rides along to resolve the anonymized
+# @lid peer IDs in the call log.
+WA_DIR="$HOME/Library/Group Containers/group.net.whatsapp.WhatsApp.shared"
+if [[ -r "$WA_DIR/CallHistory.sqlite" ]]; then
+  for DB in CallHistory LID; do
+    SRC="$WA_DIR/$DB.sqlite"
+    if [[ ! -r "$SRC" ]]; then
+      log "WARN: WhatsApp $DB.sqlite not readable — skipping"
+      continue
+    fi
+    DST="$RUN_DIR/whatsapp-${(L)DB}.db"
+    if /usr/bin/sqlite3 "$SRC" ".backup '$DST'"; then
+      STATS=""
+      if [[ "$DB" == "CallHistory" ]]; then
+        STATS=$(/usr/bin/sqlite3 "$DST" \
+          "SELECT '; ' || count(*) || ' events, ' || date(min(ZDATE)+978307200,'unixepoch') || ' -> ' || date(max(ZDATE)+978307200,'unixepoch') FROM ZWACDCALLEVENT;" 2>/dev/null) || STATS="; (stats query failed)"
+      fi
+      /bin/rm -f "${DST}-wal" "${DST}-shm"
+      /usr/bin/gzip -f "$DST"
+      SIZE=$(/usr/bin/du -h "${DST}.gz" | /usr/bin/awk '{print $1}')
+      log "backup OK: ${DST}.gz (${SIZE}${STATS})"
+    else
+      log "ERROR: sqlite3 .backup failed for WhatsApp $DB"
+    fi
+  done
+else
+  log "WARN: WhatsApp CallHistory.sqlite not found (WhatsApp not installed/linked here) — skipping"
+fi
+
 # Siri.Remembers.CallHistory Biome stream — the only Mac-side record of
 # third-party CallKit calls (WhatsApp etc.), synced from the iPhone under
 # remote/<device-uuid>/. CallHistoryDB itself only ever gets phone + FaceTime.
