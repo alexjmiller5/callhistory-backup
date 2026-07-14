@@ -62,9 +62,41 @@ in
       default = 5;
       description = "Minute the backup fires.";
     };
+
+    installWhatsApp = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = ''
+        Install WhatsApp (homebrew cask) and keep it running as a linked
+        companion device, so its CallHistory.sqlite — the only store anywhere
+        with third-party call durations — stays synced for the weekly
+        snapshot (the script captures it automatically when present).
+        One-time manual step: link the device via QR (WhatsApp on this
+        machine → iPhone → Settings → Linked Devices).
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable {
+    homebrew = lib.mkIf cfg.installWhatsApp {
+      enable = true;
+      casks = [ "whatsapp" ];
+    };
+
+    # Keep WhatsApp running in the login session so it continuously syncs
+    # call history from the iPhone between weekly snapshots.
+    launchd.user.agents.whatsapp-keepalive = lib.mkIf cfg.installWhatsApp {
+      serviceConfig = {
+        Label = "com.alexmiller.whatsapp-keepalive";
+        ProgramArguments = [
+          "/bin/sh" "-c"
+          "/usr/bin/pgrep -x WhatsApp >/dev/null || /usr/bin/open -ga WhatsApp"
+        ];
+        RunAtLoad = true;
+        StartInterval = 3600;
+      };
+    };
+
     system.activationScripts.postActivation.text = lib.mkAfter ''
       # Stable self-signed signing cert (one-time, idempotent). A stable cert
       # => stable designated requirement => the FDA grant persists across rebuilds.

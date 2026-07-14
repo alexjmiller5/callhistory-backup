@@ -58,6 +58,10 @@ services.callhistory-backup = {
   enable = true;
   user = "alexmiller";
   # weekday = 0; hour = 5; minute = 5;   # defaults: Sunday 05:05
+  # Install WhatsApp (cask) + keep it running as a linked companion device,
+  # so its call log — the only store with third-party call durations — stays
+  # synced for the snapshot. One-time manual step: link via QR.
+  installWhatsApp = true;
 };
 ```
 
